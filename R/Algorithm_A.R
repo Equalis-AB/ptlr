@@ -3,7 +3,7 @@
 #' This function calculates robust mean and sd with 'Algorithm A' described in  
 #' ISO 13528-2015, section C.3.1
 #' @param x numerical vector
-#'  @return A list with robust mean and sd.
+#' @return A list with robust mean and sd.
 #' \itemize{
 #'   \item robust_mean - the robust mean of x.
 #'   \item robust_sd - the robust standard deviation of x.
@@ -15,9 +15,6 @@
 AlgorithmA <- function(x) {
   stab=1
   Res<-x
-  #Res<-c(0.04,0.055,0.178,0.202,0.206,0.227,0.228,0.23,0.23,0.235,0.236,0.237,0.243,0.244,0.245,0.2555,0.26,0.264,0.267,0.27,0.273,0.274,0.274,0.278,0.2811,0.287,0.287,0.288,0.289,0.295,0.296,0.311,0.331,0.4246)
-  
-  #Res=Res[Res!=0] #OBS bra for test!!
   Res<-sort(Res)
   
   #-----------Algortim A------
@@ -78,9 +75,6 @@ AlgorithmA <- function(x) {
     gransvardeNer<-xx - d
     gransvardeUpp<-xx + d
     
-    print(gransvardeNer)
-    print(gransvardeUpp)
-    
     #9.Ersatt de originalresultat som ligger utanfor granserna med gransvardena fran steg 8.
     i=1
     for (i in i:length(Res_rob)){
@@ -117,8 +111,6 @@ AlgorithmA <- function(x) {
   #(upprepningar). Slutligt medelvarde ar medelvardet (m*) fran sista iterationen och
   #slutlig SD ar 1,134 x SD* fran sista iterationen.
   sx/sxOld
-  
-  
   
   return(list(robust_mean =mean(Res_rob),
   robust_sd =1.134*sd(Res_rob)))

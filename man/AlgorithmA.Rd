@@ -7,12 +7,14 @@
 AlgorithmA(x)
 }
 \arguments{
-\item{x}{numerical vector
-@return A list with robust mean and sd.
+\item{x}{numerical vector}
+}
+\value{
+A list with robust mean and sd.
 \itemize{
 \item robust_mean - the robust mean of x.
 \item robust_sd - the robust standard deviation of x.
-}}
+}
 }
 \description{
 This function calculates robust mean and sd with 'Algorithm A' described in
