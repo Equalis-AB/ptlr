@@ -1,2 +1,2 @@
 # ptlr
-ISO-compliant algorithms for proficiency testing by interlaboratory comparison in R
+ISO-compliant algorithms for **p**roficiency **t**esting by inter**l**aboratory comparison in **R**
