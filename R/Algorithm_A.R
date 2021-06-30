@@ -16,7 +16,7 @@ Algorithm_A <- function(x) {
   if(min(is.na(x))){
     return(NA)
   }
-  else if (length(x)) {
+  else if (length(x)==1) {
     return(list(robust_mean = x, robust_sd = 0))
   }
   stab=1
