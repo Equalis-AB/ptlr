@@ -10,13 +10,13 @@
 #' }
 #' @export
 #' @examples
-#' AlgorithmA(c(0.2640, 0.2670, 0.2960 ,0.3110, 0.3310, 0.4246))
+#' Algorithm_A(c(0.2640, 0.2670, 0.2960 ,0.3110, 0.3310, 0.4246))
 
-AlgorithmA <- function(x) {
-  if(min(is.na(x)) == 1){
+Algorithm_A <- function(x) {
+  if(min(is.na(x))){
     return(NA)
   }
-  else if (length(x) == 1) {
+  else if (length(x)) {
     return(list(robust_mean = x, robust_sd = 0))
   }
   stab=1
