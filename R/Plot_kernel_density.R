@@ -16,7 +16,6 @@
 Plot_kernel_density <- function(x,kernal_sd = "a") {
   #TODO add more variants
   if(kernal_sd == "a") {
-    robust_sd <- Algorithm_A(x)$robust_sd
     kernal_sd <- (0.9*robust_sd)/(length(x)^0.2)
   }
   dens <- density(x,kernal_sd,sqrt(kernal_sd),"gaussian")
