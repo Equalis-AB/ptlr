@@ -2,9 +2,11 @@
 
 export(Algorithm_A)
 export(Hampel)
+export(Homogeneity)
 export(Plot_kernel_density)
 export(Q_Hampel)
 export(Q_method)
+export(Stability)
 import(dplyr)
 import(ggplot2)
 import(tidyr)
