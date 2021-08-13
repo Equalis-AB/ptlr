@@ -56,7 +56,8 @@ Hampel <- function(df, a = 1.5, b = 3.0, c = 4.5, s_star =  Q_method(df)) {
      ) %>% na.omit()
     )
   median_y <- median(y)
-  res <- min(sapply(solutions, function(x) abs(x-median_y)))
+  dist_to_mean <- sapply(solutions, function(x) abs(x-median_y))
+  res <- solutions[which(dist_to_mean==min(dist_to_mean))]
   if (length(res)!=1) {
     return(median_y)
   }
