@@ -11,8 +11,17 @@
 #' Q_method(data.frame(replicate1=c(1,2,3,4,5),replicate2 = c(6,7,NA,100,NA)))
 
 Q_method <- function(df) {
-  xx <- sort(H_discontinuity_points(df))
-  df_res <- data.frame(H=unlist(lapply(xx,function(x) {H(x,df)})),x=xx)
+  #dec: maximum number of decimals points in input
+  dec <-  df %>%
+    pivot_longer(everything()) %>%
+    mutate(num_dec =nchar(gsub("(.*)(\\.)|([0]*$)","",value))) %>%
+    summarise(max(num_dec,na.rm=T)) %>%
+    pull()
+  #d: distances between every replicate
+  d<-round(as.matrix(dist(unlist(df))),dec)
+  #xx: discontinuity points of H
+  xx <- sort(H_discontinuity_points(df,d,dec))
+  df_res <- data.frame(H=unlist(lapply(xx,function(x) {H(x,df,d)})),x=xx)
   df_res <- df_res %>% G()
   H_0 <- ifelse(length(which(df_res$x==0))==0,0,df_res$H[which(df_res$x==0)])
   x_for_Ginv <- 0.25+0.75*H_0
@@ -22,15 +31,12 @@ Q_method <- function(df) {
   return(Ginv_res/(sqrt(2)*q_norm))
 }
 
-H <- function(x,df) {
-  #dec: maximum number of decimals points in input
-  dec <-  df %>%
-    pivot_longer(everything()) %>%
-    mutate(num_dec =nchar(gsub("(.*)(\\.)|([0]*$)","",value))) %>%
-    summarise(max(num_dec,na.rm=T)) %>%
-    pull()
-  #p: #labsm
+H <- function(x,df,d) {
+  #p: no. labs
   p <- dim(df)[1]
+  #r: no. replicates
+  r <- dim(df)[2]
+  # difference matrix
   c1 <- 2/(p*(p-1))
   list_df <- list()
   for (i in 1:p) {
@@ -42,15 +48,7 @@ H <- function(x,df) {
     for(i in 1:(j-1)) {
       n_i <- length(list_df[[i]])
       c2 <- 1/(n_j*n_i)
-      restmp = 0
-      for(k in 1:n_i) {
-        for(m in 1:n_j) {
-          abs_diff <- round(abs(list_df[[i]][k] - list_df[[j]][m]),dec)
-          tmp <- as.numeric(abs_diff <=x)
-          restmp = restmp + tmp
-        }
-      }
-      restmp <- c2*restmp
+      restmp <- c2*sum(d[seq(i,p*r,p),seq(j,p*r,p)]<=x,na.rm=T)
       res <- res + restmp
     }
   }
@@ -58,33 +56,15 @@ H <- function(x,df) {
   return(res)
 }
 
-H_discontinuity_points <- function(df) {
-  #dec: maximum number of decimals points in input
-  dec <-  df %>%
-    pivot_longer(everything()) %>%
-    mutate(num_dec =nchar(gsub("(.*)(\\.)|([0]*$)","",value))) %>%
-    summarise(max(num_dec,na.rm=T)) %>%
-    pull()
-  #p: #labs
-  p <- dim(df)[1]
-  list_df <- list()
-  for (i in 1:p) {
-    list_df <- append(list_df,list(df[i,]))
-  }
-  diffs <- list()
-  for (j in 2:p) {
-    n_j <- length(list_df[[j]])
-    for(i in 1:(j-1)) {
-      n_i<- length(list_df[[i]])
-      for(k in 1:n_i) {
-        for(m in 1:n_j) {
-          abs_diff <- abs(list_df[[i]][k] - list_df[[j]][m])
-          diffs <- append(diffs,list(abs_diff))
-        }
-      }
-    }
-  }
-  return(unique(round(unlist(diffs),dec)))
+H_discontinuity_points <- function(df,d,dec) {
+  n <- dim(d)[1]
+  depth=dim(df)[2]-1
+  nr <- dim(df)[1]
+  rm_index <- list()
+  for( i in depth) { rm_index <- append(rm_index, seq(nr*i+1, n*(n+1)+1-i*(nr*n+1), n+1))}
+  rm_index <- unlist(rm_index)
+  d[rm_index] <- NA
+  return(unique(round(d[which(lower.tri(d))],dec)))
 }
 
 G <- function(df) {
