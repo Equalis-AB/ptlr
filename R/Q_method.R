@@ -38,17 +38,12 @@ H <- function(x,df,d) {
   r <- dim(df)[2]
   # difference matrix
   c1 <- 2/(p*(p-1))
-  list_df <- list()
-  for (i in 1:p) {
-    list_df <- append(list_df,list(as.numeric(df[i,])[which(!is.na(as.numeric(df[i,])))]))
-  }
   res <- 0
+  #n: no. replicates per lab
+  n<-sapply(1:p,function(x) sum(!is.na(df[x,])))
   for (j in 2:p) {
-    n_j <- length(list_df[[j]])
     for(i in 1:(j-1)) {
-      n_i <- length(list_df[[i]])
-      c2 <- 1/(n_j*n_i)
-      restmp <- c2*sum(d[seq(i,p*r,p),seq(j,p*r,p)]<=x,na.rm=T)
+      restmp <- sum(d[seq(i,p*r,p),seq(j,p*r,p)]<=x,na.rm=T)/(n[j]*n[i])
       res <- res + restmp
     }
   }
