@@ -52,13 +52,15 @@ H <- function(x,df,d) {
 }
 
 H_discontinuity_points <- function(df,d,dec) {
-  n <- dim(d)[1]
   depth=dim(df)[2]-1
-  nr <- dim(df)[1]
-  rm_index <- list()
-  for(i in 1:depth) { rm_index <- append(rm_index, seq(nr*i+1, n*(n+1)+1-i*(nr*n+1), n+1))}
-  rm_index <- unlist(rm_index)
-  d[rm_index] <- NA
+  if (depth>0) {
+    n <- dim(d)[1]
+    nr <- dim(df)[1]
+    rm_index <- list()
+    for(i in 1:depth) { rm_index <- append(rm_index, seq(nr*i+1, n*(n+1)+1-i*(nr*n+1), n+1))}
+    rm_index <- unlist(rm_index)
+    d[rm_index] <- NA
+  }
   return(unique(round(d[which(lower.tri(d))],dec)))
 }
 
