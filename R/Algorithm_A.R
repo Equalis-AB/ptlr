@@ -18,6 +18,8 @@
 #'   \item robust_sd - the robust standard deviation of data.
 #' }
 #' 
+#' @export
+#' 
 #' @examples
 #' # --- Validation against Example E.1 from ISO 13528:2022(E) ---
 #'
