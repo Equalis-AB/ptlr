@@ -2,24 +2,35 @@
 % Please edit documentation in R/Algorithm_A.R
 \name{Algorithm_A}
 \alias{Algorithm_A}
-\title{Robust Mean and Standard Deviation}
+\title{Calculate Robust Mean and Standard Deviation using Algorithm A}
 \usage{
-Algorithm_A(x)
+Algorithm_A(data, max_iter = 100, tol = 1e-05, df = 1)
 }
 \arguments{
-\item{x}{numerical vector}
+\item{data}{A numeric vector of data points (e.g., measurements or residuals).}
+
+\item{max_iter}{An integer specifying the maximum number of iterations.}
+
+\item{tol}{A numeric value for the convergence tolerance. The iteration stops
+when the relative change in both x_star and s_star is less than this tolerance.}
+
+\item{df}{An integer for the degrees of freedom to use in the denominator of the
+standard deviation calculation (\code{p - df}). Defaults to 1 for standard
+univariate estimation. For regression residuals, this would typically be the
+number of parameters in the model (intercept + slopes).}
 }
 \value{
 A list with robust mean and sd.
 \itemize{
-\item robust_mean - the robust mean of x.
-\item robust_sd - the robust standard deviation of x.
+\item robust_mean - the robust mean of data.
+\item robust_sd - the robust standard deviation of data.
 }
 }
 \description{
-This function calculates robust mean and sd with 'Algorithm A' described in
-ISO 13528-2015, section C.3.1
+Implements Algorithm A with iterated scale as described in Annex C.3.1
+of the ISO 13528:2022(E) standard, with an adjustable degrees of freedom parameter.
 }
-\examples{
-Algorithm_A(c(0.2640, 0.2670, 0.2960 ,0.3110, 0.3310, 0.4246))
+\references{
+ISO 13528:2022(E), "Statistical methods for use in proficiency
+testing by interlaboratory comparison", Annex C.3.1
 }

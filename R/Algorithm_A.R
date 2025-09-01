@@ -1,124 +1,129 @@
-#' Robust Mean and Standard Deviation
+#' Calculate Robust Mean and Standard Deviation using Algorithm A
 #'
-#' This function calculates robust mean and sd with 'Algorithm A' described in
-#' ISO 13528-2015, section C.3.1
-#' @param x numerical vector
+#' Implements Algorithm A with iterated scale as described in Annex C.3.1
+#' of the ISO 13528:2022(E) standard, with an adjustable degrees of freedom parameter.
+#'
+#' @param data A numeric vector of data points (e.g., measurements or residuals).
+#' @param max_iter An integer specifying the maximum number of iterations.
+#' @param tol A numeric value for the convergence tolerance. The iteration stops
+#'   when the relative change in both x_star and s_star is less than this tolerance.
+#' @param df An integer for the degrees of freedom to use in the denominator of the
+#'   standard deviation calculation (`p - df`). Defaults to 1 for standard
+#'   univariate estimation. For regression residuals, this would typically be the
+#'   number of parameters in the model (intercept + slopes).
+#'
 #' @return A list with robust mean and sd.
 #' \itemize{
-#'   \item robust_mean - the robust mean of x.
-#'   \item robust_sd - the robust standard deviation of x.
+#'   \item robust_mean - the robust mean of data.
+#'   \item robust_sd - the robust standard deviation of data.
 #' }
-#' @export
+#' 
 #' @examples
-#' Algorithm_A(c(0.2640, 0.2670, 0.2960 ,0.3110, 0.3310, 0.4246))
+#' # --- Validation against Example E.1 from ISO 13528:2022(E) ---
+#'
+#' # Original participant data from Table E.1, page 68.
+#' # Censored values are stored as negative numbers for easy processing.
+#' original_data <- c(-10, -10, 12, 19, -20, 20, 23, 23, 25, 25, 26, 28, 28,
+#'                    -30, 28, 29, 30, 30, 31, 32, 32, 45, -50)
+#'
+#' # Scenario 1: '<' ignored (treat '<10' as 10)
+#' cat("--- Scenario 1: '<' ignored ---\n")
+#' data_ignored <- abs(original_data)
+#' result_ignored <- algorithm_A(data_ignored)
+#' cat("Calculated x*:", round(result_ignored$robust_mean, 2), "\n")
+#' cat("Calculated s*:", round(result_ignored$robust_sd, 2), "\n")
+#' cat("Expected x* from Table E.1: 26.01\n")
+#' cat("Expected s* from Table E.1: 7.23\n\n")
+#'
+#' # Scenario 2: '<' deleted (remove results with '<')
+#' cat("--- Scenario 2: '<' deleted ---\n")
+#' data_deleted <- original_data[original_data > 0]
+#' result_deleted <- algorithm_A(data_deleted)
+#' cat("Calculated x*:", round(result_deleted$robust_mean, 2), "\n")
+#' cat("Calculated s*:", round(result_deleted$robust_sd, 2), "\n")
+#' cat("Expected x* from Table E.1: 26.81\n")
+#' cat("Expected s* from Table E.1: 5.29\n\n")
+#'
+#' # Scenario 3: 0.5 * '<' value (replace '<10' with 5)
+#' cat("--- Scenario 3: 0.5 * '<' value ---\n")
+#' data_half <- ifelse(original_data < 0, 0.5 * abs(original_data), original_data)
+#' result_half <- algorithm_A(data_half)
+#' cat("Calculated x*:", round(result_half$robust_mean, 2), "\n")
+#' cat("Calculated s*:", round(result_half$robust_sd, 2), "\n")
+#' cat("Expected x* from Table E.1: 23.95\n")
+#' cat("Expected s* from Table E.1: 8.60\n\n")
+#'
+#' # --- Example: Usage with Regression Residuals ---
+#' set.seed(42)
+#' x <- 1:30
+#' y <- 2 * x + 5 + rnorm(30, mean = 0, sd = 3)
+#' y[c(5, 15, 25)] <- c(40, 10, 90) # Add outliers
+#'
+#' model <- lm(y ~ x)
+#' residuals <- resid(model)
+#'
+#' # Model has 2 parameters (intercept, slope), so df = 2
+#' robust_stats_residuals <- algorithm_A(residuals, df = 2)
+#'
+#' cat("\n--- Robust Statistics for Regression Residuals ---\n")
+#' cat("Robust Mean of Residuals (x*):", robust_stats_residuals$robust_mean, "\n")
+#' cat("Robust Std. Dev. of Residuals (s*):", robust_stats_residuals$robust_sd, "\n")
+#' cat("Compare with non-robust estimate:", summary(model)$sigma, "\n")
+#' }
+#'
+#' @references ISO 13528:2022(E), "Statistical methods for use in proficiency
+#'   testing by interlaboratory comparison", Annex C.3.1
 
-Algorithm_A <- function(x) {
-  if(min(is.na(x))){
-    return(NA)
+Algorithm_A <- function(data, max_iter = 100, tol = 1e-5, df = 1) {
+  
+  # Ensure data is a numeric vector and remove NAs
+  data <- as.numeric(data)
+  data <- data[!is.na(data)]
+  p <- length(data)
+  
+  if (p <= df) {
+    stop("Length of data must be greater than degrees of freedom (df).")
   }
-  else if (length(x)==1) {
-    return(list(robust_mean = x, robust_sd = 0))
+  
+  # Step 1: Calculate initial values for x* and s* (Formulas C.5 and C.6)
+  x_star <- median(data)
+  s_star <- 1.483 * median(abs(data - x_star))
+  
+  # NOTE 2 from C.3.1: Handle cases where the initial s* is zero.
+  if (s_star == 0) {
+    # Calculate initial sd with appropriate degrees of freedom
+    s_star <- sqrt(sum((data - mean(data))^2) / (p - df))
   }
-  stab=1
-  Res<-x
-  Res<-sort(Res)
-
-  #-----------Algortim A------
-
-  #1.Identifiera medianvardet for samtliga originalresultat.
-  xx<-median(Res)
-
-  medel_alla<-vector()
-  medel_alla[1]<-mean(Res)
-  sd(Res)
-
-  #2.Berakna avvikelsen fran medianvardet i absoluta tal for varje enskilt originalresultat.
-  Avv<-abs(Res-xx)
-
-  #3.Berakna medianavvikelsen (= medianvardet for avvikelserna fran steg 2).
-  MedAvv<-median(Avv)
-
-  #4.Berakna preliminar SD (SD*) enligt: SD*= medianavvikelsen × 1,483.
-  sx=1.483*MedAvv
-
-  SD_alla<-vector()
-  SD_alla[1]<-sx
-
-
-  #5.Berakna gransvarden medianvardet - 1,5 × SD* och medianvardet + 1,5 × SD*.
-  d=1.5*sx
-  Ner<-gransvardeNer<-xx-d
-  Upp<-gransvardeUpp<-xx+d
-
-  #6.Ersatt de resultat som ligger utanfor granserna med det narmaste gransvardet.
-  Res_rob<-Res
-  i=1
-  for (i in i:length(Res)){
-    if (Res_rob[i]<gransvardeNer){
-      Res_rob[i]=gransvardeNer}
-    if (Res_rob[i]>gransvardeUpp){
-      Res_rob[i]=gransvardeUpp}
-  }
-
-  #7.Berakna preliminart medelvarde (m*) och preliminart SD (SD*) for de nya resultaten pa vanligt satt
-  xx<-mean(Res_rob)
-  sx=sd(Res_rob)
-
-  medel_alla[2]<-xx
-  SD_alla[2]<-sx
-
-  #11. Upprepa steg 8-10 tills granserna inte langre andras.
-  xtra=0
-  nr=0
-  while (stab==1){
-    #antal iterationer sparas
-    sxOld<-sx
-    nr=nr+1
-    stab=0
-    #8.Berakna nya gransvarden: m* + 1,5 × 1,134 × SD* och m* - 1,5 × 1,134 × SD*.
-    sx=1.134*sx
-    d=1.5*sx
-    gransvardeNer<-xx - d
-    gransvardeUpp<-xx + d
-
-    #9.Ersatt de originalresultat som ligger utanfor granserna med gransvardena fran steg 8.
-    i=1
-    for (i in i:length(Res_rob)){
-      if (Res[i]<gransvardeNer){
-        Res_rob[i]=gransvardeNer
-      } else if (Res[i]>gransvardeUpp){
-        Res_rob[i]=gransvardeUpp
-      } else {Res_rob[i]=Res[i]}
+  
+  # Iteration loop
+  for (i in 1:max_iter) {
+    
+    x_star_old <- x_star
+    s_star_old <- s_star
+    
+    # Step 2: Update values
+    # Calculate delta (Formula C.7)
+    delta <- 1.5 * s_star
+    
+    # Create a new data vector x_prime by "winsorizing" (Formula C.8)
+    x_prime <- pmin(pmax(data, x_star - delta), x_star + delta)
+    
+    # Calculate new x* (Formula C.9)
+    x_star <- mean(x_prime)
+    
+    # Calculate new s* (Formula C.10) with specified degrees of freedom
+    sum_sq_dev <- sum((x_prime - x_star)^2)
+    s_star <- 1.134 * sqrt(sum_sq_dev / (p - df))
+    
+    # Check for convergence
+    # Using a relative tolerance check is a robust programming equivalent.
+    if (is.finite(x_star) && is.finite(s_star) &&
+        abs((x_star - x_star_old) / x_star_old) < tol &&
+        abs((s_star - s_star_old) / s_star_old) < tol) {
+      break
     }
-
-    #10.Berakna nytt preliminart medelvarde (m*) och SD*
-    xx<-mean(Res_rob)
-    sx=sd(Res_rob)
-    #gamla kriteriet <1%
-    #if(sx/sxOld<0.99 | sx/sxOld>1.01){stab=1}
-
-    #kriteriet enl standard (stabilt pa i tre sig siffror)
-    if (signif(xx,3)!=signif(medel_alla[length(medel_alla)],3) | signif(sx,3)!=signif(SD_alla[length(SD_alla)],3)){stab=1}
-    # if(stab==0 & xtra == 0){
-    #   xtra=1
-    #   stab=1
-    # }
-    #Kriterie med helt stabila granser
-    #if(Ner!=gransvardeNer | Upp!=gransvardeUpp){stab=1}
-    Ner=gransvardeNer
-    Upp=gransvardeUpp
-
-    medel_alla[length(medel_alla)+1]<-xx
-    SD_alla[length(SD_alla)+1]<-sx
-
   }
-
-  #11. Upprepa steg 8-10 tills granserna inte langre andras. Vanligen hogst 20 iterationer
-  #(upprepningar). Slutligt medelvarde ar medelvardet (m*) fran sista iterationen och
-  #slutlig SD ar 1,134 x SD* fran sista iterationen.
-  sx/sxOld
-
-  return(list(robust_mean =mean(Res_rob),
-  robust_sd =1.134*sd(Res_rob)))
+  
+  # Return the final robust estimates
+  return(list(robust_mean = x_star, robust_sd = s_star))
 }
-
