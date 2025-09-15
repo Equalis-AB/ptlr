@@ -119,10 +119,12 @@ Algorithm_A <- function(data, max_iter = 100, tol = 1e-5, df = 1) {
     
     # Check for convergence
     # Using a relative tolerance check is a robust programming equivalent.
-    if (is.finite(x_star) && is.finite(s_star) &&
-        abs((x_star - x_star_old) / x_star_old) < tol &&
-        abs((s_star - s_star_old) / s_star_old) < tol) {
-      break
+    if (is.finite(x_star) && is.finite(s_star)) {
+      x_converged <- if (x_star_old != 0) abs((x_star - x_star_old) / x_star_old) < tol else TRUE
+      s_converged <- if (s_star_old != 0) abs((s_star - s_star_old) / s_star_old) < tol else TRUE
+      if (x_converged && s_converged) {
+        break
+      }
     }
   }
   
